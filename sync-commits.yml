@@ -1,0 +1,68 @@
+# .github/workflows/sync-commits.yml
+name: Sync Commits to Notion
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Number of days to sync'
+        required: false
+        default: '7'
+        type: string
+
+  # Run after each push to main (optional)
+  push:
+    branches: [ main ]
+
+jobs:
+  sync-commits:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: List files (debug)
+        run: ls -la
+      
+      - name: Sync commits to Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          GITHUB_OWNER: ${{ secrets.GH_OWNER }}
+          GITHUB_REPO: ${{ secrets.GH_REPO }}
+        run: |
+          echo "Environment variables set:"
+          echo "NOTION_TOKEN: ${NOTION_TOKEN:0:10}..."
+          echo "GITHUB_TOKEN: ${GITHUB_TOKEN:0:10}..."
+          echo "NOTION_DATABASE_ID: $NOTION_DATABASE_ID"
+          echo "GITHUB_OWNER: $GITHUB_OWNER"
+          echo "GITHUB_REPO: $GITHUB_REPO"
+          
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npx tsx sync-github-commits.ts ${{ github.event.inputs.days }}
+          else
+            npx tsx sync-github-commits.ts 7
+          fi
+      
+      - name: Report status
+        if: always()
+        run: |
+          echo "Sync completed with status: ${{ job.status }}"

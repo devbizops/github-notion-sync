@@ -15,9 +15,9 @@ console.log('📦 Imports loaded successfully');
 // Configuration
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const NOTION_DATABASE_ID = 'your_notion_database_id_here'; // Your commits database ID
-const GITHUB_OWNER = 'your_github_username_here'; // Replace with your GitHub username
-const GITHUB_REPO = 'your_github_repo_here'; // Replace with your repo name
+const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
+const GITHUB_OWNER = process.env.GITHUB_OWNER;
+const GITHUB_REPO = process.env.GITHUB_REPO;
 
 // Cache configuration
 const CACHE_FILE = '.github-sync-cache.json';
