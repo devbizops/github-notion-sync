@@ -45,7 +45,7 @@ Create a database with the following properties:
 
 1. **Install Dependencies**:
    ```bash
-   npm install @notionhq/client @octokit/rest dotenv
+   npm install
    ```
 
 2. **Environment Variables**:
@@ -56,7 +56,7 @@ Create a database with the following properties:
    ```
 
 3. **Script Configuration**:
-   Update the configuration in `scripts/sync-github-commits.ts`:
+   Update the configuration in `sync-github-commits.ts`:
    ```typescript
    const NOTION_DATABASE_ID = 'your_database_id_here';
    const GITHUB_OWNER = 'your_github_username';
@@ -67,21 +67,18 @@ Create a database with the following properties:
 
 ### Basic Usage
 ```bash
-npm run sync-commits
+npm run sync
 ```
 
 ### Custom Date Range
 ```bash
-npm run sync-commits 14  # Sync last 14 days
+npx tsx sync-github-commits.ts 14  # Sync last 14 days
 ```
 
 ### Cache Management
 ```bash
 # Clear the cache (forces re-processing of all commits)
-npx tsx scripts/sync-github-commits.ts --clear-cache
-
-# Or using npm script (if configured)
-npm run sync-commits -- --clear-cache
+npm run sync:clear
 ```
 
 ### Example Output
@@ -100,7 +97,7 @@ npm run sync-commits -- --clear-cache
 ## Script Structure
 
 ```
-scripts/sync-github-commits.ts
+sync-github-commits.ts
 ├── Environment Setup
 ├── Client Initialization
 ├── Cache Management Functions
