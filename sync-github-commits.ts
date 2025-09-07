@@ -1,5 +1,5 @@
-// scripts/sync-github-commits.ts
-console.log('🚀 Script starting...');
+// GitHub to Notion Commit Sync Script
+// Automatically syncs GitHub commits to a Notion database with intelligent deduplication
 
 // Load environment variables from .env files
 import { config } from 'dotenv';
@@ -9,8 +9,6 @@ config(); // Then load from .env if it exists
 import { Client } from '@notionhq/client';
 import { Octokit } from '@octokit/rest';
 import * as fs from 'fs';
-
-console.log('📦 Imports loaded successfully');
 
 // Configuration
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
@@ -31,10 +29,8 @@ interface SyncCache {
 }
 
 // Initialize clients
-console.log('🔧 Initializing clients...');
 const notion = new Client({ auth: NOTION_TOKEN });
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
-console.log('✅ Clients initialized');
 
 // Cache management functions
 async function loadCache(): Promise<SyncCache> {
@@ -156,7 +152,35 @@ function detectImpactLevel(message: string, additions: number = 0, deletions: nu
 }
 
 
-// Note: commitExistsInNotion function removed - now using client-side caching
+// Check if commit already exists in Notion database
+async function commitExistsInNotion(sha: string): Promise<boolean> {
+  try {
+    console.log(`🔍 Checking if commit ${sha} exists in Notion...`);
+    
+    const response = await notion.databases.query({
+      database_id: NOTION_DATABASE_ID,
+      filter: {
+        property: 'GitHub SHA',
+        rich_text: {
+          equals: sha
+        }
+      }
+    });
+
+    const exists = response.results.length > 0;
+    if (exists) {
+      console.log(`✅ Commit ${sha} already exists in Notion`);
+    } else {
+      console.log(`➕ Commit ${sha} not found in Notion, will create new entry`);
+    }
+    
+    return exists;
+  } catch (error) {
+    console.error(`❌ Error checking if commit ${sha} exists in Notion:`, error);
+    // If we can't check, assume it doesn't exist to avoid missing commits
+    return false;
+  }
+}
 
 // Get detailed commit information including file changes
 async function getCommitDetails(sha: string): Promise<CommitData | null> {
@@ -272,11 +296,12 @@ async function getCommitFiles(sha: string): Promise<string[]> {
 // Main sync function
 async function syncRecentCommits(days: number = 7): Promise<void> {
   console.log(`🚀 Starting GitHub to Notion sync for last ${days} days...`);
+  console.log(`🔍 Using Notion-based deduplication (no local cache dependency)`);
   
-  // Load cache
+  // Load cache for local performance tracking (optional)
   const cache = await loadCache();
-  console.log(`📊 Cache: ${cache.processedSHAs.length} commits previously processed`);
-  console.log(`📅 Last sync: ${cache.lastSync}`);
+  console.log(`📊 Local cache: ${cache.processedSHAs.length} commits previously processed locally`);
+  console.log(`📅 Last local sync: ${cache.lastSync}`);
   
   try {
     // Get recent commits
@@ -343,9 +368,12 @@ async function syncRecentCommits(days: number = 7): Promise<void> {
     let skippedCount = 0;
 
     for (const commit of commits) {
-      // Check if commit already exists in cache
-      if (commitExistsInCache(commit.sha, cache)) {
-        console.log(`⏭️  Skipping cached commit: ${commit.sha.substring(0, 7)}`);
+      const shortSha = commit.sha.substring(0, 7);
+      
+      // Check if commit already exists in Notion
+      const existsInNotion = await commitExistsInNotion(shortSha);
+      if (existsInNotion) {
+        console.log(`⏭️  Skipping existing commit: ${shortSha}`);
         skippedCount++;
         continue;
       }
@@ -353,7 +381,7 @@ async function syncRecentCommits(days: number = 7): Promise<void> {
       // Get detailed commit info
       const commitData = await getCommitDetails(commit.sha);
       if (!commitData) {
-        console.log(`⚠️  Could not get details for commit: ${commit.sha.substring(0, 7)}`);
+        console.log(`⚠️  Could not get details for commit: ${shortSha}`);
         continue;
       }
 
@@ -361,7 +389,7 @@ async function syncRecentCommits(days: number = 7): Promise<void> {
       const success = await createNotionCommit(commitData);
       if (success) {
         processedCount++;
-        // Add to cache after successful creation
+        // Update cache for local performance (optional)
         cache.processedSHAs.push(commit.sha);
         cache.totalProcessed++;
       }
@@ -370,13 +398,12 @@ async function syncRecentCommits(days: number = 7): Promise<void> {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // Cleanup cache and save
+    // Update local cache for performance tracking (optional)
     cleanupCache(cache);
     cache.lastSync = new Date().toISOString();
     await saveCache(cache);
     
     console.log(`✨ Sync complete! Processed: ${processedCount}, Skipped: ${skippedCount}`);
-    console.log(`📊 Total commits in cache: ${cache.processedSHAs.length}`);
   } catch (error) {
     console.error('❌ Error during sync:', error);
   }
@@ -384,7 +411,6 @@ async function syncRecentCommits(days: number = 7): Promise<void> {
 
 // CLI interface
 async function main() {
-  console.log('🎯 Main function called');
   try {
     const args = process.argv.slice(2);
     
@@ -400,7 +426,6 @@ async function main() {
     }
     
     const days = args[0] ? parseInt(args[0]) : 7;
-    console.log(`📋 Arguments: ${args.join(' ')}, Days: ${days}`);
     
     // Validate days parameter
     if (isNaN(days) || days < 1 || days > 365) {
@@ -434,12 +459,6 @@ async function main() {
 export { syncRecentCommits, detectFeatureArea, detectImpactLevel };
 
 // Run if called directly
-console.log('🔍 Checking if script is being run directly...');
-
-// Simple approach: if this script is being run via tsx, it should be the main module
 if (process.argv[1] && process.argv[1].includes('sync-github-commits.ts')) {
-  console.log('✅ Script is being run directly, calling main()');
   main().catch(console.error);
-} else {
-  console.log('ℹ️  Script is being imported, not running main()');
 }

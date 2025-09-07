@@ -1,462 +1,500 @@
-# GitHub to Notion Commit Sync Script
+# GitHub to Notion Sync - Complete Guide
 
-## Overview
+A comprehensive guide to setting up and using the GitHub to Notion commit synchronization system.
 
-This script automatically synchronizes GitHub commits to a Notion database, providing a centralized view of your development activity. It fetches recent commits from a specified GitHub repository and creates structured entries in your Notion database.
+## 📋 Table of Contents
 
-## Features
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Detailed Setup](#detailed-setup)
+- [Using the Application](#using-the-application)
+- [Notion Database Guide](#notion-database-guide)
+- [GitHub Actions Setup](#github-actions-setup)
+- [Troubleshooting & FAQ](#troubleshooting--faq)
+- [Advanced Configuration](#advanced-configuration)
 
-- ✅ **Automatic Commit Fetching**: Retrieves commits from the last N days (default: 7)
-- ✅ **Rich Commit Data**: Includes commit message, author, date, SHA, and file changes
-- ✅ **Notion Integration**: Creates structured database entries with all commit details
-- ✅ **Environment Configuration**: Secure token management via environment variables
-- ✅ **Error Handling**: Graceful error handling with detailed logging
-- ✅ **Flexible Date Range**: Configurable number of days to sync
+## 🎯 Overview
 
-## Prerequisites
+This system automatically syncs GitHub commits to a Notion database, providing a centralized view of your development activity. It features intelligent deduplication, automated GitHub Actions, and rich commit data with feature area detection.
 
-### 1. GitHub Personal Access Token
-- Go to GitHub Settings → Developer settings → Personal access tokens
-- Create a new token with `repo` scope
-- Copy the token for use in environment variables
+### ✨ Key Features
 
-### 2. Notion Integration
-- Go to [Notion Integrations](https://www.notion.so/my-integrations)
-- Create a new integration (e.g., "GitHub Sync")
-- Copy the integration token
-- Share your database with the integration:
-  - Open your Notion database
-  - Click "Share" → "Add connections"
-  - Search for your integration and add it
+- **🔄 Automated Syncing**: GitHub Actions workflow runs every 6 hours
+- **🚫 Duplicate Prevention**: Notion-based deduplication prevents duplicate entries
+- **🏠 Local Development**: Run locally for testing and development
+- **📊 Rich Data**: Includes commit stats, file changes, and feature area detection
+- **⚡ Performance**: Local caching for faster development runs
+- **🔧 Configurable**: Customizable date ranges and repository settings
 
-### 3. Notion Database Setup
-Create a database with the following properties:
-- **Title** (Title) - Commit message
-- **GitHub SHA** (Rich text) - Short commit hash
-- **Author** (Rich text) - Commit author
-- **Commit Date** (Date) - Commit date
-- **Repository** (Rich text) - Repository name
-- **Files Changed** (Number) - Number of files modified
-- **Additions** (Number) - Lines added
-- **Deletions** (Number) - Lines deleted
-- **Commit URL** (URL) - Link to commit on GitHub
+## 🚀 Quick Start
 
-## Installation
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+### 2. Create Environment File
+Create `.env.local` with your credentials:
+```env
+NOTION_TOKEN=your_notion_integration_token
+NOTION_DATABASE_ID=your_notion_database_id
+GITHUB_TOKEN=your_github_personal_access_token
+GITHUB_OWNER=your_github_username_or_org
+GITHUB_REPO=your_target_repository_name
+```
 
-2. **Environment Variables**:
-   Create a `.env.local` file in your project root:
-   ```env
-   NOTION_TOKEN=your_notion_integration_token
-   GITHUB_TOKEN=your_github_personal_access_token
-   ```
-
-3. **Script Configuration**:
-   Update the configuration in `sync-github-commits.ts`:
-   ```typescript
-   const NOTION_DATABASE_ID = 'your_database_id_here';
-   const GITHUB_OWNER = 'your_github_username';
-   const GITHUB_REPO = 'your_repository_name';
-   ```
-
-## Usage
-
-### Basic Usage
+### 3. Test Locally
 ```bash
 npm run sync
 ```
 
-### Custom Date Range
-```bash
-npx tsx sync-github-commits.ts 14  # Sync last 14 days
-```
+### 4. Setup GitHub Actions
+1. Push to GitHub
+2. Add environment variables as repository secrets
+3. Workflow runs automatically every 6 hours
 
-### Cache Management
+## 🔧 Detailed Setup
+
+### Step 1: GitHub Personal Access Token
+
+1. **Go to GitHub Settings**:
+   - Visit: [github.com/settings/tokens](https://github.com/settings/tokens)
+   - Or: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+
+2. **Create New Token**:
+   - Click "Generate new token" → "Generate new token (classic)"
+   - Give it a name (e.g., "Notion Sync")
+   - Select scopes: `repo` (full control of private repositories)
+   - Click "Generate token" and copy it
+
+3. **Required Permissions**:
+   - `repo` - Access to private repositories
+   - `public_repo` - Access to public repositories (if needed)
+
+### Step 2: Notion Integration Setup
+
+1. **Create Integration**:
+   - Go to [notion.so/my-integrations](https://notion.so/my-integrations)
+   - Click "New integration"
+   - Give it a name (e.g., "GitHub Sync")
+   - Select your workspace
+   - Copy the "Internal Integration Token"
+
+2. **Share Database with Integration**:
+   - Open your Notion database
+   - Click "Share" in the top right
+   - Click "Add connections"
+   - Search for your integration name
+   - Click "Add"
+
+### Step 3: Notion Database Setup
+
+Create a database with these properties:
+
+| Property Name | Type | Description |
+|---------------|------|-------------|
+| **Commit Message** | Title | The commit message (main title) |
+| **GitHub SHA** | Rich Text | Short commit hash (7 characters) |
+| **GitHub URL** | URL | Link to commit on GitHub |
+| **Author** | Rich Text | Commit author name |
+| **Commit Date** | Date | When the commit was made |
+| **Repository** | Select | Repository name (e.g., "CommunityGPT-MVP") |
+| **Feature Area** | Select | Auto-detected area (e.g., "Chat Interface") |
+| **Impact Level** | Select | Auto-detected impact (e.g., "Major Feature") |
+| **Lines Added** | Number | Lines of code added |
+| **Lines Deleted** | Number | Lines of code deleted |
+| **Files Changed** | Number | Number of files modified |
+| **Status** | Select | Commit status (e.g., "Committed") |
+| **Branch** | Rich Text | Branch name (default: "main") |
+
+### Step 4: Get Database ID
+
+1. **Open your Notion database**
+2. **Copy the URL** - it looks like:
+   ```
+   https://notion.so/your-workspace/DATABASE_ID?v=...
+   ```
+3. **Extract the Database ID** - the 32-character string between the last `/` and the `?`
+
+## 💻 Using the Application
+
+### Basic Commands
+
 ```bash
-# Clear the cache (forces re-processing of all commits)
+# Sync last 7 days (default)
+npm run sync
+
+# Sync last 30 days
+npm run sync 30
+
+# Clear cache and sync
 npm run sync:clear
 ```
 
-### Example Output
+### Understanding the Output
+
+When you run the sync, you'll see output like this:
+
 ```bash
 🚀 Starting GitHub to Notion sync for last 7 days...
-📊 Cache: 15 commits previously processed
-📅 Last sync: 2025-09-05T18:20:43.275Z
-📦 Found 9 commits in the last 7 days
-⏭️  Skipping cached commit: b55417d
-⏭️  Skipping cached commit: 47281dc
-✅ Created Notion entry for commit: a1b2c3d  # New commit
-✨ Sync complete! Processed: 1, Skipped: 8
-📊 Total commits in cache: 16
+🔍 Using Notion-based deduplication (no local cache dependency)
+📊 Local cache: 11 commits previously processed locally
+📅 Last local sync: 2025-09-06T16:35:48.831Z
+📅 Fetching commits since: 2025-08-30T19:10:57.603Z
+🔍 Querying: devbizops/chat-demo
+📦 Found 11 commits in the last 7 days
+🔍 Checking if commit d447d59 exists in Notion...
+✅ Commit d447d59 already exists in Notion
+⏭️  Skipping existing commit: d447d59
+✨ Sync complete! Processed: 0, Skipped: 11
 ```
 
-## Script Structure
+### What Each Line Means
 
-```
-sync-github-commits.ts
-├── Environment Setup
-├── Client Initialization
-├── Cache Management Functions
-│   ├── loadCache()                # Load cache from file
-│   ├── saveCache()                # Save cache to file
-│   ├── cleanupCache()             # Prevent unlimited growth
-│   └── commitExistsInCache()      # Fast duplicate checking
-├── Helper Functions
-│   ├── getCommitDetails()         # Fetch detailed commit info
-│   ├── createNotionCommit()       # Create Notion database entry
-│   └── syncRecentCommits()        # Main sync logic with caching
-└── Main Execution (with --clear-cache support)
-```
+- **🚀 Starting sync**: Beginning the synchronization process
+- **🔍 Using Notion-based deduplication**: Using Notion as the source of truth
+- **📊 Local cache**: Shows your local performance cache
+- **📅 Fetching commits**: Getting commits from GitHub
+- **📦 Found X commits**: Number of commits found in the date range
+- **🔍 Checking if commit exists**: Verifying against Notion database
+- **✅ Already exists**: Commit is already in Notion (skipped)
+- **➕ Not found**: Commit is new (will be created)
+- **✨ Sync complete**: Final summary
 
-## Current Implementation
+## 📊 Notion Database Guide
 
-### Working Features
-- ✅ Environment variable loading with dotenv
-- ✅ GitHub API integration with Octokit
-- ✅ Notion API integration with @notionhq/client
-- ✅ Commit data fetching and processing
-- ✅ Notion database entry creation
-- ✅ Error handling and logging
-- ✅ Configurable date ranges
-- ✅ **Client-side caching for duplicate checking**
-- ✅ **Cache management with automatic cleanup**
-- ✅ **Clear cache command (`--clear-cache`)**
+### Understanding Your Data
 
-### Known Issues
-- ✅ **All major issues resolved** - The script is now fully functional
+Once commits are synced, your Notion database will contain rich information about each commit:
 
-## Future Enhancements
+#### **Commit Message** (Title)
+The main commit message from GitHub, used as the page title.
 
-### 1. Duplicate Entry Checking ✅ **IMPLEMENTED**
-**Priority: High** - **COMPLETED**
+#### **GitHub SHA**
+Short commit hash (7 characters) for easy identification.
 
-**Solution Implemented**: Client-Side Caching
+#### **GitHub URL**
+Direct link to view the commit on GitHub.
 
-**Status**: ✅ **FULLY FUNCTIONAL** - The duplicate checking feature has been successfully implemented using client-side caching.
+#### **Author**
+The person who made the commit.
 
-**Current Implementation Details**:
-- **Cache File**: `.github-sync-cache.json` (stored in project root)
-- **Cache Structure**: Stores processed commit SHAs, last sync timestamp, and total processed count
-- **Cache Management**: Automatic cleanup (max 1000 SHAs), cross-session persistence
-- **Performance**: Zero API calls for duplicate checking, instant lookups
-- **CLI Support**: `--clear-cache` command to reset cache
-- **Statistics**: Shows cache size and last sync time in output
+#### **Commit Date**
+When the commit was made.
 
-**Why This is the Best Approach**:
-- ✅ **Zero API calls** for duplicate checking during same run
-- ✅ **Fastest execution** - simple in-memory lookups
-- ✅ **No rate limiting** concerns from repeated Notion API calls
-- ✅ **Cross-session persistence** - prevents re-processing between runs
-- ✅ **Fault tolerant** - handles partial syncs gracefully
-- ✅ **Version independent** - works with any Notion client version
+#### **Repository**
+Which repository the commit belongs to.
 
-**Implementation**:
-```typescript
-// Cache management
-const CACHE_FILE = '.github-sync-cache.json';
+#### **Feature Area** (Auto-detected)
+The system automatically categorizes commits based on:
+- **Chat Interface**: Files with "chat" or "interface" in the name
+- **BigQuery Integration**: Files related to analytics or BigQuery
+- **AI/Claude API**: Files related to AI or Anthropic services
+- **Database/Supabase**: Database or authentication related files
+- **UI/UX**: CSS, styling, or UI related changes
+- **Testing**: Test files or testing related commits
+- **Deployment**: Build, deploy, or infrastructure changes
+- **Bug Fix**: Commits with "fix" or "bug" in the message
 
-interface SyncCache {
-  processedSHAs: Set<string>;
-  lastSync: string;
-  totalProcessed: number;
-}
+#### **Impact Level** (Auto-detected)
+Based on commit patterns and changes:
+- **Major Feature**: Large changes (>200 lines) or "feat:" commits
+- **Bug Fix**: Commits with "fix:" or "bug" in the message
+- **Refactor**: Commits with "refactor:" or "cleanup"
+- **Documentation**: Commits with "docs:" or "readme"
+- **Minor Feature**: Smaller changes (50-200 lines)
 
-async function loadCache(): Promise<SyncCache> {
-  try {
-    if (fs.existsSync(CACHE_FILE)) {
-      const data = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8'));
-      return {
-        processedSHAs: new Set(data.processedSHAs || []),
-        lastSync: data.lastSync || new Date().toISOString(),
-        totalProcessed: data.totalProcessed || 0
-      };
-    }
-  } catch (error) {
-    console.log('Cache file corrupted, starting fresh');
-  }
-  
-  return {
-    processedSHAs: new Set(),
-    lastSync: new Date().toISOString(),
-    totalProcessed: 0
-  };
-}
+#### **Lines Added/Deleted**
+Statistics about code changes.
 
-async function saveCache(cache: SyncCache): Promise<void> {
-  try {
-    const data = {
-      processedSHAs: Array.from(cache.processedSHAs),
-      lastSync: cache.lastSync,
-      totalProcessed: cache.totalProcessed
-    };
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Failed to save cache:', error);
-  }
-}
+#### **Files Changed**
+Number of files modified in the commit.
 
-async function commitExistsInNotion(sha: string, cache: SyncCache): Promise<boolean> {
-  return cache.processedSHAs.has(sha);
-}
+### Using Your Database
 
-// Usage in main sync function
-async function syncRecentCommits(days: number = 7) {
-  const cache = await loadCache();
-  console.log(`📊 Cache: ${cache.processedSHAs.size} commits previously processed`);
-  
-  const commits = await getRecentCommits(days);
-  
-  for (const commit of commits) {
-    if (await commitExistsInNotion(commit.sha, cache)) {
-      console.log(`⏭️  Skipping cached commit: ${commit.sha.substring(0, 7)}`);
-      continue;
-    }
-    
-    // Process commit...
-    await createNotionCommit(commitData);
-    
-    // Update cache
-    cache.processedSHAs.add(commit.sha);
-    cache.totalProcessed++;
-  }
-  
-  cache.lastSync = new Date().toISOString();
-  await saveCache(cache);
-  
-  console.log(`✨ Sync complete! Processed: ${processedCount}, Cached: ${cache.processedSHAs.size}`);
-}
-```
+#### **Filtering and Sorting**
+- **Filter by Feature Area**: See all commits related to a specific feature
+- **Filter by Impact Level**: Focus on major features or bug fixes
+- **Sort by Date**: See recent activity
+- **Filter by Author**: Track individual contributor activity
 
-**Cache Management Features**:
-```typescript
-// Optional: Cache cleanup to prevent unlimited growth
-function cleanupCache(cache: SyncCache, maxSize: number = 1000): SyncCache {
-  if (cache.processedSHAs.size > maxSize) {
-    const shas = Array.from(cache.processedSHAs);
-    const recentSHAs = shas.slice(-maxSize);
-    cache.processedSHAs = new Set(recentSHAs);
-    console.log(`🧹 Cache cleaned: kept ${maxSize} most recent SHAs`);
-  }
-  return cache;
-}
+#### **Creating Views**
+Create different views for different purposes:
+- **Recent Activity**: Last 30 days, sorted by date
+- **Major Features**: Filter by "Major Feature" impact level
+- **Bug Fixes**: Filter by "Bug Fix" impact level
+- **By Feature Area**: Group by feature area
 
-// Optional: Clear cache command
-if (process.argv.includes('--clear-cache')) {
-  fs.unlinkSync(CACHE_FILE);
-  console.log('🗑️  Cache cleared');
-  process.exit(0);
-}
-```
+#### **Creating Reports**
+Use Notion's reporting features to:
+- Track development velocity
+- Identify active contributors
+- Monitor feature development
+- Analyze code quality trends
 
-### 2. Batch Processing
-**Priority: Medium**
+## ⚙️ GitHub Actions Setup
 
-**Enhancement**: Process multiple commits in parallel to improve performance.
+### Step 1: Push to GitHub
 
-**Implementation**:
-```typescript
-async function syncRecentCommits(days: number = 7) {
-  const commits = await getRecentCommits(days);
-  
-  // Process commits in batches of 5
-  const batchSize = 5;
-  for (let i = 0; i < commits.length; i += batchSize) {
-    const batch = commits.slice(i, i + batchSize);
-    await Promise.all(batch.map(commit => processCommit(commit)));
-  }
-}
-```
-
-### 3. Incremental Sync
-**Priority: Medium**
-
-**Enhancement**: Track the last sync timestamp to only fetch new commits.
-
-**Implementation**:
-```typescript
-// Store last sync timestamp in a file or database
-const LAST_SYNC_FILE = '.last-sync';
-const lastSync = await getLastSyncTimestamp();
-const commits = await getCommitsSince(lastSync);
-await updateLastSyncTimestamp(new Date());
-```
-
-### 4. Commit Filtering
-**Priority: Low**
-
-**Enhancement**: Filter commits by author, message patterns, or file types.
-
-**Implementation**:
-```typescript
-interface CommitFilter {
-  authors?: string[];
-  excludePatterns?: string[];
-  fileTypes?: string[];
-}
-
-function shouldIncludeCommit(commit: Commit, filter: CommitFilter): boolean {
-  // Implementation for filtering logic
-}
-```
-
-### 5. Rich Commit Details
-**Priority: Low**
-
-**Enhancement**: Include more detailed commit information.
-
-**Additional Data**:
-- Commit diff statistics
-- Changed file names
-- Commit tags/branches
-- Pull request references
-- Code review status
-
-### 6. Notion Database Schema Validation
-**Priority: Medium**
-
-**Enhancement**: Validate that the Notion database has the required properties.
-
-**Implementation**:
-```typescript
-async function validateNotionDatabase(): Promise<boolean> {
-  try {
-    const database = await notion.databases.retrieve({
-      database_id: NOTION_DATABASE_ID
-    });
-    
-    const requiredProperties = [
-      'Title', 'GitHub SHA', 'Author', 'Commit Date',
-      'Repository', 'Files Changed', 'Additions', 'Deletions', 'Commit URL'
-    ];
-    
-    return requiredProperties.every(prop => 
-      database.properties[prop] !== undefined
-    );
-  } catch (error) {
-    console.error('Database validation failed:', error);
-    return false;
-  }
-}
-```
-
-### 7. Configuration File
-**Priority: Low**
-
-**Enhancement**: Move configuration to a separate JSON file.
-
-**Implementation**:
-```json
-{
-  "notion": {
-    "databaseId": "your_database_id",
-    "properties": {
-      "title": "Title",
-      "sha": "GitHub SHA",
-      "author": "Author"
-    }
-  },
-  "github": {
-    "owner": "your_username",
-    "repo": "your_repo"
-  },
-  "sync": {
-    "defaultDays": 7,
-    "batchSize": 5,
-    "enableDuplicateCheck": true
-  }
-}
-```
-
-### 8. CLI Interface
-**Priority: Low**
-
-**Enhancement**: Add command-line interface with options.
-
-**Implementation**:
 ```bash
-npm run sync-commits -- --days 14 --repo my-repo --owner my-username --dry-run
+git add .
+git commit -m "Add GitHub to Notion sync with Actions"
+git push origin main
 ```
 
-### 9. Webhook Integration
-**Priority: Low**
+### Step 2: Add Repository Secrets
 
-**Enhancement**: Set up GitHub webhooks for real-time sync.
+Go to your repository on GitHub:
+1. **Settings** → **Secrets and variables** → **Actions**
+2. **Click "New repository secret"** and add each:
 
-**Implementation**:
-- Create webhook endpoint
-- Process push events
-- Update Notion in real-time
+| Secret Name | Value | Example |
+|-------------|-------|---------|
+| `NOTION_TOKEN` | Your Notion integration token | `secret_abc123...` |
+| `GH_TOKEN` | Your GitHub personal access token | `ghp_xyz789...` |
+| `NOTION_DATABASE_ID` | Your Notion database ID | `a1b2c3d4e5f6...` |
+| `GH_OWNER` | Owner of the repository you want to track | `yourusername` |
+| `GH_REPO` | Name of the repository you want to track | `my-awesome-app` |
 
-### 10. Analytics Dashboard
-**Priority: Low**
+### Step 3: Test the Workflow
 
-**Enhancement**: Create Notion dashboard with commit analytics.
+1. **Go to Actions tab** in your repository
+2. **Click on "Sync Commits to Notion"** workflow
+3. **Click "Run workflow"** button
+4. **Choose "Run workflow"** to test manually
 
-**Features**:
-- Commit frequency charts
-- Author activity metrics
-- File change statistics
-- Repository health indicators
+### Step 4: Monitor the Workflow
 
-## Troubleshooting
+The workflow will:
+- Run every 6 hours automatically
+- Run on every push to main (optional)
+- Allow manual triggering with custom parameters
+- Show detailed logs of what it's doing
+
+
+## 🔧 Troubleshooting & FAQ
 
 ### Common Issues
 
-1. **"Could not find database" Error**:
-   - Verify the database ID is correct
-   - Ensure the integration has access to the database
-   - Check that the database is shared with your integration
+#### **"Missing required environment variables" Error**
 
-2. **"Invalid token" Error**:
-   - Verify environment variables are set correctly
-   - Check token permissions and expiration
-   - Ensure tokens are in `.env.local` file
+**Problem**: Script can't find your credentials.
 
-3. **"No commits found" Error**:
-   - Verify repository name and owner
-   - Check if there are commits in the specified date range
-   - Ensure GitHub token has repository access
+**Solution**:
+1. Check that `.env.local` file exists in project root
+2. Verify all required variables are set:
+   ```env
+   NOTION_TOKEN=your_token_here
+   NOTION_DATABASE_ID=your_database_id_here
+   GITHUB_TOKEN=your_github_token_here
+   GITHUB_OWNER=your_username
+   GITHUB_REPO=your_repo_name
+   ```
+3. Make sure there are no extra spaces or quotes
 
-### Debug Mode
+#### **"Could not find database" Error**
 
-Enable debug logging by setting:
+**Problem**: Notion can't access your database.
+
+**Solutions**:
+1. **Check Database ID**: Make sure it's the correct 32-character string
+2. **Share with Integration**: 
+   - Open your Notion database
+   - Click "Share" → "Add connections"
+   - Add your integration
+3. **Check Integration Token**: Verify it's correct and not expired
+
+#### **"Invalid token" Error**
+
+**Problem**: GitHub or Notion token is invalid.
+
+**Solutions**:
+1. **GitHub Token**: 
+   - Check it has `repo` scope
+   - Verify it's not expired
+   - Make sure it has access to the target repository
+2. **Notion Token**: 
+   - Verify it's the correct integration token
+   - Check the integration is active
+
+#### **"No commits found" Error**
+
+**Problem**: No commits in the specified date range.
+
+**Solutions**:
+1. **Check Date Range**: Try a longer period (e.g., 30 days)
+2. **Verify Repository**: Make sure `GH_OWNER` and `GH_REPO` are correct
+3. **Check Repository Access**: Ensure your GitHub token can access the repository
+
+#### **"Repository not found" Error**
+
+**Problem**: GitHub can't find the repository.
+
+**Solutions**:
+1. **Check Repository Name**: Verify `GH_REPO` is exactly right
+2. **Check Owner**: Verify `GH_OWNER` is correct (username or organization)
+3. **Check Access**: Make sure your token has access to the repository
+
+### Performance Issues
+
+#### **Slow Sync Performance**
+
+**Problem**: Sync takes a long time.
+
+**Solutions**:
+1. **Reduce Date Range**: Sync fewer days at a time
+2. **Check API Limits**: GitHub has rate limits (5000 requests/hour)
+3. **Use Local Cache**: The system caches results for faster subsequent runs
+
+#### **Rate Limiting**
+
+**Problem**: GitHub API rate limit exceeded.
+
+**Solutions**:
+1. **Wait**: Rate limits reset every hour
+2. **Reduce Batch Size**: The script includes delays between API calls
+3. **Use Authenticated Requests**: Your token increases rate limits
+
+### GitHub Actions Issues
+
+#### **Workflow Fails to Start**
+
+**Problem**: GitHub Action doesn't run.
+
+**Solutions**:
+1. **Check Secrets**: All required secrets must be set
+2. **Check Workflow File**: Make sure `.github/workflows/sync-commits.yml` exists
+3. **Check Permissions**: Repository must allow GitHub Actions
+
+#### **Workflow Runs But Fails**
+
+**Problem**: Action runs but encounters errors.
+
+**Solutions**:
+1. **Check Logs**: View the workflow logs in the Actions tab
+2. **Verify Secrets**: Make sure all secrets are correctly set
+3. **Test Locally**: Run the script locally to identify issues
+
+### Notion Issues
+
+#### **Database Properties Missing**
+
+**Problem**: Script can't create entries because properties don't exist.
+
+**Solutions**:
+1. **Check Property Names**: Make sure they match exactly (case-sensitive)
+2. **Check Property Types**: Verify each property has the correct type
+3. **Recreate Database**: If needed, create a new database with the correct schema
+
+#### **Integration Permissions**
+
+**Problem**: Integration can't access the database.
+
+**Solutions**:
+1. **Re-share Database**: Remove and re-add the integration
+2. **Check Integration Status**: Make sure it's active in Notion
+3. **Verify Workspace**: Ensure the integration is in the correct workspace
+
+## 🔧 Advanced Configuration
+
+### Custom Feature Area Detection
+
+You can modify the feature area detection logic in `sync-github-commits.ts`:
+
 ```typescript
-const DEBUG = true;
+function detectFeatureArea(message: string, files: string[] = []): string {
+  const lowerMessage = message.toLowerCase();
+  const fileStr = files.join(' ').toLowerCase();
+  
+  // Add your custom detection logic here
+  if (lowerMessage.includes('your-keyword') || fileStr.includes('your-file-pattern')) {
+    return 'Your Custom Area';
+  }
+  
+  // ... existing logic
+}
 ```
 
-## Performance Considerations
+### Custom Impact Level Detection
 
-- **Rate Limiting**: GitHub API has rate limits (5000 requests/hour for authenticated users)
-- **Batch Processing**: Process commits in batches to avoid overwhelming the APIs
-- **Caching**: Implement caching for duplicate checks and database queries
-- **Error Recovery**: Implement retry logic for failed API calls
+Modify the impact level detection:
 
-## Security Best Practices
+```typescript
+function detectImpactLevel(message: string, additions: number = 0, deletions: number = 0): string {
+  const lowerMessage = message.toLowerCase();
+  const totalChanges = additions + deletions;
+  
+  // Add your custom logic here
+  if (lowerMessage.includes('your-pattern')) {
+    return 'Your Custom Level';
+  }
+  
+  // ... existing logic
+}
+```
 
-- Store tokens in environment variables, never in code
-- Use `.env.local` for local development
-- Regularly rotate API tokens
-- Limit token permissions to minimum required scopes
-- Use HTTPS for all API communications
+### Environment Variables
 
-## Contributing
+You can use different environment files:
+
+```bash
+# Use .env.local (default)
+npm run sync
+
+# Use .env.production
+NODE_ENV=production npm run sync
+
+# Use custom file
+DOTENV_CONFIG_PATH=.env.custom npm run sync
+```
+
+### Cache Management
+
+The system automatically manages cache, but you can:
+
+```bash
+# Clear cache manually
+npm run sync:clear
+
+# Or delete the cache file directly
+rm .github-sync-cache.json
+```
+
+### GitHub Actions Customization
+
+Modify the workflow schedule in `.github/workflows/sync-commits.yml`:
+
+```yaml
+on:
+  schedule:
+    # Run every 2 hours instead of 6
+    - cron: '0 */2 * * *'
+    
+    # Run every weekday at 9 AM
+    - cron: '0 9 * * 1-5'
+```
+
+## 📚 Additional Resources
+
+- [Notion API Documentation](https://developers.notion.com/)
+- [GitHub API Documentation](https://docs.github.com/en/rest)
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Node.js Environment Variables](https://nodejs.org/en/learn/command-line/how-to-read-environment-variables-from-nodejs)
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Implement your changes
-4. Add tests if applicable
+3. Make your changes
+4. Test thoroughly
 5. Submit a pull request
 
-## License
+## 📄 License
 
-This script is part of the chat-demo project and follows the same license terms.
+This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-**Last Updated**: September 5, 2025  
-**Version**: 1.1.0  
-**Status**: ✅ **FULLY FUNCTIONAL** - All core features implemented including duplicate checking
+**Last Updated**: September 6, 2025  
+**Version**: 2.0.0  
+**Status**: ✅ **Production Ready** - Full Notion-based deduplication implemented
